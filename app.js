@@ -134,7 +134,7 @@ app.delete("/districts/:districtId/", async (request, response) => {
 //put a district
 app.put("/districts/:districtId/", async (request, response) => {
   const { districtId } = request.params;
-  const getDistrictdetails = request.body;
+  const districtDetails = request.body;
   const {
     districtName,
     stateId,
@@ -142,21 +142,45 @@ app.put("/districts/:districtId/", async (request, response) => {
     cured,
     active,
     deaths,
-  } = getDistrictdetails;
-  const updateDistrictQuery = `
- update district
- SET
- district_name='${districtName}',
-state_id=${stateId},
- cases=${cases},
- cured=${cured},
- active=${active},
- deaths=${deaths}
- WHERE district_id=${districtId};
- 
- `;
-
-  await data.run(updateDistrictQuery);
+  } = districtDetails;
+  const putRequestQuery = `
+    UPDATE district 
+    SET 
+    district_name="${districtName}",
+    state_id=${stateId},
+    cases=${cases},
+    cured=${cured},
+    active=${active},
+    deaths=${deaths}
+    `;
+  const updateRequest = await data.run(putRequestQuery);
+  console.log(updateRequest);
   response.send("District Details Updated");
+});
+
+//get state by give state_id with total cured,active,cases etc..
+app.get("/states/:stateId/stats/", async (request, response) => {
+  const { stateId } = request.params;
+  const stateStatusQuery = `
+  SELECT 
+  SUM(cases) as totalCases,
+  SUM(cured) as totalCured,
+  SUM(active) as totalActive,
+  SUM(deaths) as totalDeaths
+  FROM state INNER JOIN district ON state.state_id=district.state_id 
+  WHERE district.state_id=${stateId}
+
+  `;
+  const totalStats = await data.get(stateStatusQuery);
+  console.log(totalStats);
+  response.send(totalStats);
+});
+
+app.get("/district/", async (request, response) => {
+  const districtQuery = `
+    SELECT * FROM district 
+    `;
+  const showDistrict = await data.all(districtQuery);
+  response.send(showDistrict);
 });
 module.exports = app;
